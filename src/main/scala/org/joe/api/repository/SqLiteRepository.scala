@@ -33,7 +33,7 @@ object SqLiteRepository extends TransactionRepository {
           limitDate.foreach { d =>
             val stm = c.prepareStatement(
               """
-                |DELETE FROM TRANSACTIONS WHERE operationDate > ?
+                |DELETE FROM TRANSACTIONS WHERE operationDate >= ?
                 |""".stripMargin)
 
             stm.setDate(1, new sql.Date(d.getTime))
@@ -77,8 +77,8 @@ object SqLiteRepository extends TransactionRepository {
             .withFields("*")
             .withPredicate("accountId", Operator.eq, accountid.toString)
             //.withPredicate("category", in, c.createArrayOf("VARCHAR",
-            .withPredicate("operationDate", gt, startDateFilterValue)
-            .withPredicate("operationDate", lt, endDateFilterValue)
+            .withPredicate("operationDate", gtEq, startDateFilterValue)
+            .withPredicate("operationDate", ltEq, endDateFilterValue)
             .build(c)
 
           stm.executeQuery()

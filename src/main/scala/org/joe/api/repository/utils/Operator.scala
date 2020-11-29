@@ -4,7 +4,7 @@ import scala.language.implicitConversions
 
 object Operator extends Enumeration {
   type Operator = Value
-  val gt, lt, eq, neq, in = Value
+  val ltEq, gtEq, gt, lt, eq, neq, in = Value
 
   def apply(operator: Operator, value: String) = {
     operator match {
@@ -18,6 +18,8 @@ object Operator extends Enumeration {
 
   implicit def operator2String(o: Operator.Value): String = {
     o match {
+      case Operator.ltEq => " <= ?"
+      case Operator.gtEq => " >= ?"
       case Operator.gt => " > ?"
       case Operator.lt => " < ?"
       case Operator.eq => " = ?"
