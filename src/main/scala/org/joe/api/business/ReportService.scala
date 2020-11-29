@@ -11,7 +11,7 @@ import scala.concurrent.{ExecutionContext, Future}
 object ReportService {
 
   def getReport(accountId: Int, categories: Seq[String], startDate: Option[String], endDate: Option[String])(implicit ec: ExecutionContext) : Kleisli[Future, Repositories, ReportResponse] = Kleisli { repositories =>
-    val formatter: SimpleDateFormat = new SimpleDateFormat("dd/MM/yyyy")
+    val formatter: SimpleDateFormat = new SimpleDateFormat("yyyy-MM-dd")
     repositories
       .transactionRepository
       .getReport(accountId, categories, startDate.map(formatter.parse), endDate.map(formatter.parse))

@@ -17,7 +17,7 @@ object TransactionService {
 
   def addTransactions(transactions: Seq[AddTransactionRequest], limitDate: Option[String])(implicit ec: ExecutionContext): Kleisli[Future, Repositories, Unit] = Kleisli {
     repository =>
-      implicit val formatter: SimpleDateFormat = new SimpleDateFormat("dd/MM/yyyy")
+      implicit val formatter: SimpleDateFormat = new SimpleDateFormat("yyyy-MM-dd")
       val billingRows = transactions.map(getBillingRow)
       repository.transactionRepository
         .bulkInsertTransaction(billingRows, limitDate.map(formatter.parse))
@@ -36,7 +36,7 @@ object TransactionService {
                      operationDate: String, valueDate: String,
                      amount: Float, label: String)(implicit ec: ExecutionContext): Kleisli[Future, Repositories, Unit] =
     Kleisli { repository =>
-      val formatter = new SimpleDateFormat("dd/MM/yyyy")
+      val formatter = new SimpleDateFormat("yyyy-MM-dd")
       val result = for {
         od <- Try(formatter.parse(operationDate))
         vd <- Try(formatter.parse(valueDate))
@@ -52,7 +52,7 @@ object TransactionService {
 
   def getTransactionHistory(accountId: Int, categories: Seq[String], startDate: Option[String], endDate: Option[String])
                            (implicit ec: ExecutionContext) : Kleisli[Future, Repositories, Seq[BillingRow]] = Kleisli { repository =>
-      val formatter = new SimpleDateFormat("dd/MM/yyyy")
+      val formatter = new SimpleDateFormat("yyyy-MM-dd")
       val result = for {
         sd <- Try(startDate.map(formatter.parse))
         ed <- Try(endDate.map(formatter.parse))
