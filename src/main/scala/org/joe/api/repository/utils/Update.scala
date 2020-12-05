@@ -41,9 +41,7 @@ object Update {
     val query = buildPredicate {
       case (acc, (Predicate(c, o, _), index)) =>
         val str: String = o
-        s"""$acc
-           |${if (index == 0) "WHERE " else "AND "} $c $str ?
-           |""".stripMargin
+        s"""$acc ${if (index == 0) "WHERE " else "AND "} $c $str""".stripMargin
     }
 
     val stm = conn.prepareStatement(query)

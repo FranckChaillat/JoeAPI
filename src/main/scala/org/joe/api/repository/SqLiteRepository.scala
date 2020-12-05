@@ -17,8 +17,8 @@ object SqLiteRepository extends TransactionRepository {
           .map { c =>
             val stm = Update("TRANSACTIONS")
                 .set("category" -> s"$category")
-                .withPredicate("identifier", Operator.eq, s"$identifier")
                 .withPredicate("accountId", Operator.eq, accountId.toString)
+                .withPredicate("identifier", Operator.eq, s"$identifier")
                 .build(c)
             stm.executeUpdate()
             c.close()
