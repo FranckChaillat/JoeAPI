@@ -21,7 +21,7 @@ object ReportResponse {
         ))
       } else
 
-        ReportResponse(acc, acc.foldLeft(0.0f) ((acc, report) => acc + report.amount), acc.length)
+        ReportResponse(acc, acc.foldLeft(0.0f) ((acc, report) => acc + report.amount), acc.map(_.transactionCount).sum)
     }
 
     collect(List.empty[ReportItem])
