@@ -53,7 +53,7 @@ object Select {
 
     val groupedQuery = if(q.groupedFields.nonEmpty) {
       s"""$query
-          |GROUP BY ${q.groupedFields.mkString(", ")}"""
+          | GROUP BY ${q.groupedFields.mkString(", ")}""".stripMargin
       } else query
 
     val orderedQuery = if(q.sortedFields.nonEmpty) {
