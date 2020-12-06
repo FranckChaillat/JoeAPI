@@ -79,6 +79,7 @@ object SqLiteRepository extends TransactionRepository {
             //.withPredicate("category", in, c.createArrayOf("VARCHAR",
             .withPredicate("operationDate", gtEq, startDateFilterValue)
             .withPredicate("operationDate", ltEq, endDateFilterValue)
+            .sorted("operationDate")
             .build(c)
 
           stm.executeQuery()
@@ -98,7 +99,6 @@ object SqLiteRepository extends TransactionRepository {
               .withPredicate("operationDate", Operator.lt, endDate.map(d => new sql.Date(d.getTime)))
              // .withPredicate("category", Operator.in, categories.map(x => s"$x").mkString(","))
               .grouped("category")
-
               .build(c)
 
           stm.executeQuery()

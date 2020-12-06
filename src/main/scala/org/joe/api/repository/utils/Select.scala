@@ -2,7 +2,7 @@ package org.joe.api.repository.utils
 
 import java.sql.{Connection, PreparedStatement}
 
-final case class Select private (table: String, fields: List[String] = List.empty, predicates: List[Predicate] = List.empty, groupedFields: List[String] = List.empty) extends Query {
+final case class Select private (table: String, fields: List[String] = List.empty, predicates: List[Predicate] = List.empty, groupedFields: List[String] = List.empty, sortedFields: List[String] = List.empty) extends Query {
 
   def this(from: String) = {
     this(from, List.empty, List.empty)
@@ -23,6 +23,10 @@ final case class Select private (table: String, fields: List[String] = List.empt
 
   def grouped(fields: String*): Select = {
     copy(groupedFields = fields.toList)
+  }
+
+  def sorted(fields: String*): Select = {
+    copy(sortedFields = fields.toList)
   }
 
   override def build(connection: Connection): PreparedStatement = {
@@ -47,12 +51,17 @@ object Select {
            |""".stripMargin
     }
 
-    val stm = if(q.groupedFields.nonEmpty) {
-      conn.prepareStatement(
-        s"""$query
-           |GROUP BY ${q.groupedFields.mkString(", ")}"""
-          .stripMargin)
-      } else conn.prepareStatement(query)
+    val groupedQuery = if(q.groupedFields.nonEmpty) {
+      s"""$query
+          |GROUP BY ${q.groupedFields.mkString(", ")}"""
+      } else query
+
+    val orderedQuery = if(q.sortedFields.nonEmpty) {
+      s"""$groupedQuery
+         | ORDER BY ${q.sortedFields.mkString(",")}""".stripMargin
+    } else groupedQuery
+
+    val stm = conn.prepareStatement(orderedQuery)
 
     q.predicates.zipWithIndex.foreach {
       case (p, i) => stm.setObject(i + 1, p.value)

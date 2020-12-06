@@ -1,5 +1,6 @@
 package org.joe.api.business
 
+import java.math.BigInteger
 import java.nio.charset.StandardCharsets
 import java.sql.Timestamp
 import java.text.{DateFormat, SimpleDateFormat}
@@ -41,7 +42,7 @@ object TransactionService {
         od <- Try(formatter.parse(operationDate))
         vd <- Try(formatter.parse(valueDate))
       } yield {
-        val id = generateIdentifier(od, vd, label, amount)
+        val id = hashRow(operationDate, valueDate, label, amount)
         val row = BillingRow(id, accountId, od, vd, label, amount, Some(1), category)
         repository
           .transactionRepository.insertTransaction(row)
@@ -64,23 +65,18 @@ object TransactionService {
       Future.fromTry(result).flatten
     }
 
-  private def generateIdentifier(operationDate: Date, valueDate: Date, label: String, amount: Float) = {
-    import java.security.MessageDigest
-    val md = MessageDigest.getInstance("MD5")
-    val str = Seq(
-      new Timestamp(operationDate.getTime).toString,
-      new Timestamp(valueDate.getTime).toString,
-      label,
-      amount).mkString(";")
-
-    val hashBytes = md.digest(str.getBytes(StandardCharsets.UTF_8))
-    DatatypeConverter.printHexBinary(hashBytes).toUpperCase()
+  private def hashRow(operationDate: String, valueDate: String, label: String, amount: Float) = {
+    val str = Seq(operationDate, valueDate, label, amount).mkString(";")
+    val md = java.security.MessageDigest.getInstance("SHA-1")
+    md.reset()
+    md.update(str.getBytes("UTF-8"))
+    String.format("%040x", new BigInteger(1, md.digest()))
   }
 
   private def getBillingRow(transactionRequest: AddTransactionRequest)(implicit fmt: DateFormat): BillingRow = {
     val od = fmt.parse(transactionRequest.operationDate)
     val vd = fmt.parse(transactionRequest.valueDate)
-    val identifier = generateIdentifier(od, vd, transactionRequest.label, transactionRequest.amount)
+    val identifier = hashRow(fmt.format(od), fmt.format(vd), transactionRequest.label, transactionRequest.amount)
     BillingRow(identifier, transactionRequest.accountId, od, vd, transactionRequest.label, transactionRequest.amount, Some(1), transactionRequest.category)
   }
 }

@@ -25,7 +25,7 @@ object UpdateTransactionEndPoint extends BodyEndPoint[TransactionUpdateRequest, 
   //TODO: properly implement CORS
   def route()(implicit executionContext : ExecutionContext): Reader[Repositories, Route] = Reader {
     repository =>
-        path("payments" / ".{32}".r) { identifier =>
+        path("payments" / ".{40}".r) { identifier =>
           options {
             complete("ok")
           } ~
