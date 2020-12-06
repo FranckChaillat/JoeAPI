@@ -93,10 +93,11 @@ object SqLiteRepository extends TransactionRepository {
       Future.fromTry(connectionBuilder())
         .map { c =>
           val stm = Select("TRANSACTIONS")
-              .withFields("category", "SUM(amount) as amount", "COUNT(identifier)")
+              .withFields("category", "SUM(amount) * -1 as amount", "COUNT(identifier)")
               .withPredicate("accountId", Operator.eq, accountid.toString)
               .withPredicate("operationDate", Operator.gt, startDate.map(d => new sql.Date(d.getTime)))
               .withPredicate("operationDate", Operator.lt, endDate.map(d => new sql.Date(d.getTime)))
+              .withPredicate("amount", Operator.lt, "0")
              // .withPredicate("category", Operator.in, categories.map(x => s"$x").mkString(","))
               .grouped("category")
               .build(c)
