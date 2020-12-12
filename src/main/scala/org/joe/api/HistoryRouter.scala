@@ -3,19 +3,20 @@ package org.joe.api
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
+import org.joe.api.endpoints.categories.{AddCategory, GetCategories}
 import org.joe.api.endpoints.reports.GetReport
 import org.joe.api.endpoints.transactions.{AddBulkTransactionEndPoint, AddTransactionEndPoint, GetHistoryEndPoint, UpdateTransactionEndPoint}
-import org.joe.api.endpoints.transactions.{AddBulkTransactionEndPoint, AddTransactionEndPoint, GetHistoryEndPoint}
 import org.joe.api.entities.ErrorResponse
 import org.joe.api.exceptions.UpdateException
 import org.joe.api.exceptions.rejections.{EmptyListRejection, InvalidValueRangeRejection}
-import org.joe.api.repository.Repositories
+import org.joe.api.repository.{BudgetRepository, Repositories, TransactionRepository}
 import org.json4s.jackson.Serialization.write
 import org.json4s.{DefaultFormats, Formats}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class HistoryRouter(repositories: Repositories) {
+class HistoryRouter(transactionRepository: Repositories[TransactionRepository],
+                    budgetRepository: Repositories[BudgetRepository]) {
 
   private implicit def format: Formats = DefaultFormats
 
@@ -52,14 +53,16 @@ class HistoryRouter(repositories: Repositories) {
 
 
   def routes: Route = pathPrefix("joe") {
+    val routes = (Seq(
+      GetHistoryEndPoint,
+      AddTransactionEndPoint,
+      UpdateTransactionEndPoint,
+      AddBulkTransactionEndPoint,
+      GetReport
+    ).map(_.route.run(transactionRepository)) ++ Seq(AddCategory, GetCategories).map(_.route.run(budgetRepository))).reduce((a, b) => a ~ b)
+
     Route.seal {
-      Seq(
-        GetHistoryEndPoint,
-        AddTransactionEndPoint,
-        UpdateTransactionEndPoint,
-        AddBulkTransactionEndPoint,
-        GetReport
-      ).map(_.route.run(repositories)).reduce((a, b) => a ~ b)
+      routes
     }
   }
 }

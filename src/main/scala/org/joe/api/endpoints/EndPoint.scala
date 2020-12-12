@@ -6,6 +6,6 @@ import scalaz.Reader
 
 import scala.concurrent.ExecutionContext
 
-trait EndPoint {
-  def route()(implicit ec: ExecutionContext) : Reader[Repositories, Route]
+trait EndPoint[R] {
+  def route()(implicit ec: ExecutionContext) : Reader[Repositories[R], Route]
 }

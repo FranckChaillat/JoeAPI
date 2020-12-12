@@ -1,15 +1,21 @@
 package org.joe.api.repository
 
 import java.sql
+import java.sql.{Connection, ResultSet}
 import java.util.Date
+
 import org.joe.api.entities.dto.{BillingRow, ReportResponse}
 import org.joe.api.repository.utils.Operator._
 import org.joe.api.repository.utils.{Operator, Select, Update}
 import scalaz.Kleisli
+
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 import scala.util.chaining._
 
-object SqLiteRepository extends TransactionRepository {
+object SqLiteRepository extends TransactionRepository with BudgetRepository {
+
+  override type ConnectionBuilder = () => Try[Connection]
 
   override def updateTransaction(accountId: Int, identifier: String, category: String)(implicit ec: ExecutionContext): Kleisli[Future, ConnectionBuilder, Unit] = Kleisli {
     connectionBuilder =>
@@ -109,4 +115,38 @@ object SqLiteRepository extends TransactionRepository {
 
   }
 
+
+  /**Budget management methods**/
+
+  override def getCategories()(implicit ec: ExecutionContext): Kleisli[Future, SqLiteRepository.ConnectionBuilder, List[String]] = Kleisli {
+    connectionBuilder =>
+      Future.fromTry(connectionBuilder())
+        .map { c =>
+          val stm = Select("CATEGORIES")
+            .withFields("label")
+            .build(c)
+
+          @scala.annotation.tailrec
+          def collect(rs: ResultSet, acc: List[String] = List.empty): List[String] =
+            if (rs.next())
+              collect(rs, acc.+:(rs.getString(1)))
+            else
+              acc
+
+          collect(stm.executeQuery())
+        }
+  }
+
+  override def addCategory(categoryLabel: String, categoryDescription: Option[String])(implicit ec: ExecutionContext): Kleisli[Future, SqLiteRepository.ConnectionBuilder, Unit] = Kleisli {
+    connectionBuilder =>
+      Future.fromTry(connectionBuilder())
+        .map { c =>
+          val stm = c.prepareStatement("INSERT INTO CATEGORIES VALUES(?, ?)")
+          stm.setString(1, categoryLabel)
+          stm.setString(2, categoryDescription.orNull)
+          stm.executeUpdate()
+
+          c.close()
+        }
+  }
 }

@@ -8,7 +8,7 @@ import akka.stream.ActorMaterializer
 import com.typesafe.config.{Config, ConfigFactory}
 import org.joe.api.configuration.Configuration
 import org.joe.api.exceptions.SqlLiteConnectionError
-import org.joe.api.repository.{Repositories, SqLiteRepository, TransactionRepository}
+import org.joe.api.repository.{BudgetRepository, Repositories, SqLiteRepository, TransactionRepository}
 import org.json4s.{DefaultFormats, Formats}
 
 import scala.concurrent.duration.Duration
@@ -20,16 +20,24 @@ object Main  {
   implicit val config: Config = ConfigFactory.load()
   val Configuration(connectionString, host, port) = Configuration.getConfiguration()
 
-  private def getRepositories: Repositories = new Repositories {
-    override def transactionRepository: TransactionRepository = SqLiteRepository
-    override def connectionBuilder: () => Try[Connection] = () => {
-      Try {
-        DriverManager.getConnection(connectionString)
-      }.recoverWith {
-        case _: Throwable =>
-          Failure(SqlLiteConnectionError(connectionString))
-      }
+
+  private def sqliteConnectionBuilder: () => Try[Connection] = () => {
+    Try {
+      DriverManager.getConnection(connectionString)
+    }.recoverWith {
+      case _: Throwable =>
+        Failure(SqlLiteConnectionError(connectionString))
     }
+  }
+
+  private def getTransactionRepository: Repositories[TransactionRepository] = new Repositories[TransactionRepository] {
+    def repository: TransactionRepository = SqLiteRepository
+    def build: () => Try[Connection] = sqliteConnectionBuilder
+  }
+
+  private def getBudgetRepository = new Repositories[BudgetRepository] {
+    def repository: BudgetRepository = SqLiteRepository
+    def build: () => Try[Connection] = sqliteConnectionBuilder
   }
 
   implicit val system: ActorSystem = ActorSystem("joeapi")
@@ -39,8 +47,7 @@ object Main  {
 
 
   def main(args: Array[String]): Unit = {
-    val repository : Repositories = getRepositories
-    lazy val router = new HistoryRouter(repository)
+    lazy val router = new HistoryRouter(getTransactionRepository, getBudgetRepository)
     val bindingFuture = Http().bindAndHandle(router.routes, host, port)
     println(s"Server online at http://${host}:${port}\nPress RETURN to stop...")
     system.registerOnTermination(() => bindingFuture.flatMap(_.unbind()))

@@ -4,7 +4,7 @@ import java.sql.Connection
 
 import scala.util.Try
 
-trait Repositories {
-  def transactionRepository: TransactionRepository
-  def connectionBuilder: () => Try[Connection]
+trait Repositories[T] {
+  def repository: T
+  def build: () => Try[Connection]
 }

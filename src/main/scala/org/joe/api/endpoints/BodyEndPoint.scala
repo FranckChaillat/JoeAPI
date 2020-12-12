@@ -12,9 +12,9 @@ import scalaz.Reader
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.Duration
 
-trait BodyEndPoint[TReq, TRes <: AnyRef] extends EndPoint {
+trait BodyEndPoint[TReq, TRes <: AnyRef, R] extends EndPoint[R] {
   def validator: Option[Validator[TReq]]
-  def route()(implicit ec: ExecutionContext) : Reader[Repositories, Route]
+  def route()(implicit ec: ExecutionContext) : Reader[Repositories[R], Route]
 
   def handle(executor: TReq => Future[TRes])(implicit mf: Manifest[TReq], timeout: Duration, formats: Formats, ec: ExecutionContext): Route = {
     withRequestTimeout(timeout, _ => getErrorResponse) {

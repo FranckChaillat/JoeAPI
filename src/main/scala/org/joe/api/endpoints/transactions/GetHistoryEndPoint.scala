@@ -8,19 +8,19 @@ import io.circe._
 import io.circe.syntax._
 import org.joe.api.business.TransactionService
 import org.joe.api.endpoints.EndPoint
-import org.joe.api.repository.Repositories
+import org.joe.api.repository.{Repositories, TransactionRepository}
 import scalaz.Reader
 
 import scala.concurrent.ExecutionContext
 
-object GetHistoryEndPoint extends EndPoint {
+object GetHistoryEndPoint extends EndPoint[TransactionRepository] {
 
   private def wrapResult[T <: AnyRef](res: T)(implicit encoder: Encoder[T]) : HttpResponse = {
     val content = res.asJson.noSpaces
     HttpResponse(StatusCodes.OK, entity = HttpEntity(ContentTypes.`application/json`, content))
   }
 
-  override def route()(implicit ec: ExecutionContext): Reader[Repositories, Route] = Reader {
+  override def route()(implicit ec: ExecutionContext): Reader[Repositories[TransactionRepository], Route] = Reader {
     repositories =>
       get {
         path("payments") {

@@ -1,14 +1,10 @@
 package org.joe.api.business
 
 import java.math.BigInteger
-import java.nio.charset.StandardCharsets
-import java.sql.Timestamp
 import java.text.{DateFormat, SimpleDateFormat}
-import java.util.Date
 
-import javax.xml.bind.DatatypeConverter
 import org.joe.api.entities.dto.{AddTransactionRequest, BillingRow}
-import org.joe.api.repository.Repositories
+import org.joe.api.repository.{Repositories, TransactionRepository}
 import scalaz.Kleisli
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -16,26 +12,30 @@ import scala.util.Try
 
 object TransactionService {
 
-  def addTransactions(transactions: Seq[AddTransactionRequest], limitDate: Option[String])(implicit ec: ExecutionContext): Kleisli[Future, Repositories, Unit] = Kleisli {
+  def addTransactions(transactions: Seq[AddTransactionRequest], limitDate: Option[String])(implicit ec: ExecutionContext)
+  : Kleisli[Future, Repositories[TransactionRepository], Unit] = Kleisli {
     repository =>
       implicit val formatter: SimpleDateFormat = new SimpleDateFormat("yyyy-MM-dd")
       val billingRows = transactions.map(getBillingRow)
-      repository.transactionRepository
+      repository
+        .repository
         .bulkInsertTransaction(billingRows, limitDate.map(formatter.parse))
-        .run(repository.connectionBuilder)
+        .run(repository.build)
   }
 
-  def updateTransaction(accountId: Int, identifier: String, category: Option[String])(implicit ec: ExecutionContext): Kleisli[Future, Repositories, Unit] = Kleisli {
+  def updateTransaction(accountId: Int, identifier: String, category: Option[String])(implicit ec: ExecutionContext)
+  : Kleisli[Future, Repositories[TransactionRepository], Unit] = Kleisli {
     repository =>
       category.map(c =>
-        repository.transactionRepository.updateTransaction(accountId, identifier, c)
-        .run(repository.connectionBuilder))
+        repository.repository
+        .updateTransaction(accountId, identifier, c)
+        .run(repository.build))
         .getOrElse(Future.unit)
   }
 
   def addTransaction(accountId: Int, category: Option[String],
                      operationDate: String, valueDate: String,
-                     amount: Float, label: String)(implicit ec: ExecutionContext): Kleisli[Future, Repositories, Unit] =
+                     amount: Float, label: String)(implicit ec: ExecutionContext): Kleisli[Future, Repositories[TransactionRepository], Unit] =
     Kleisli { repository =>
       val formatter = new SimpleDateFormat("yyyy-MM-dd")
       val result = for {
@@ -44,23 +44,23 @@ object TransactionService {
       } yield {
         val id = hashRow(operationDate, valueDate, label, amount)
         val row = BillingRow(id, accountId, od, vd, label, amount, Some(1), category)
-        repository
-          .transactionRepository.insertTransaction(row)
-          .run(repository.connectionBuilder)
+        repository.repository
+          .insertTransaction(row)
+          .run(repository.build)
       }
       Future.fromTry(result).flatten
     }
 
   def getTransactionHistory(accountId: Int, categories: Seq[String], startDate: Option[String], endDate: Option[String])
-                           (implicit ec: ExecutionContext) : Kleisli[Future, Repositories, Seq[BillingRow]] = Kleisli { repository =>
+                           (implicit ec: ExecutionContext)
+  : Kleisli[Future, Repositories[TransactionRepository], Seq[BillingRow]] = Kleisli { repository =>
       val formatter = new SimpleDateFormat("yyyy-MM-dd")
       val result = for {
         sd <- Try(startDate.map(formatter.parse))
         ed <- Try(endDate.map(formatter.parse))
       } yield {
-        repository
-          .transactionRepository
-          .getTransactionRows(accountId, categories, sd, ed).run(repository.connectionBuilder)
+        repository.repository
+          .getTransactionRows(accountId, categories, sd, ed).run(repository.build)
       }
       Future.fromTry(result).flatten
     }
