@@ -7,7 +7,9 @@ lazy val root = (project in file("."))
     mainClass in Compile := Some("org.joe.api.Main")
   )
 
-resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
+resolvers += "Maven Central Server" at "https://repo1.maven.org/maven2"
+
+resolvers += "Typesafe Server" at "https://repo.typesafe.com/typesafe/releases"
 
 libraryDependencies ++= Seq(
   "io.circe" %% "circe-core" % "0.13.0",
