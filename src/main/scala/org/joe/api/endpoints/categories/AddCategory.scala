@@ -1,6 +1,5 @@
 package org.joe.api.endpoints.categories
 
-import akka.http.scaladsl.model.headers.`Access-Control-Allow-Origin`
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import org.joe.api.business.BudgetService
@@ -27,10 +26,10 @@ object AddCategory extends BodyEndPoint[AddCategoryRequest, String, BudgetReposi
         complete("ok")
       } ~
       post {
-        path("budget" / "categories") {
+        path("budgets" / IntNumber) { accountId =>
           handle { request =>
             BudgetService
-              .addCategory(request.categoryLabel, request.categoryDescription)
+              .addBudget(accountId, request.label, request.description, request.amount)
               .run(repositories)
               .map(_ => "OK")
           }

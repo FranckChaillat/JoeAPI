@@ -4,7 +4,7 @@ import java.sql
 import java.sql.{Connection, ResultSet}
 import java.util.Date
 
-import org.joe.api.entities.dto.{BillingRow, ReportResponse}
+import org.joe.api.entities.dto.{BillingRow, BudgetItem, ReportResponse}
 import org.joe.api.repository.utils.Operator._
 import org.joe.api.repository.utils.{Operator, Select, Update}
 import scalaz.Kleisli
@@ -117,33 +117,30 @@ object SqLiteRepository extends TransactionRepository with BudgetRepository {
 
 
   /**Budget management methods**/
-
-  override def getCategories()(implicit ec: ExecutionContext): Kleisli[Future, SqLiteRepository.ConnectionBuilder, List[String]] = Kleisli {
+  override def getBudgets(accountId: Int)(implicit ec: ExecutionContext): Kleisli[Future, SqLiteRepository.ConnectionBuilder, List[BudgetItem]] = Kleisli {
     connectionBuilder =>
       Future.fromTry(connectionBuilder())
         .map { c =>
-          val stm = Select("CATEGORIES")
-            .withFields("label")
+          val stm = Select("BUDGETS")
+            .withFields("label", "description", "amount")
+            .withPredicate("accountId", Operator.eq, accountId)
             .build(c)
 
-          @scala.annotation.tailrec
-          def collect(rs: ResultSet, acc: List[String] = List.empty): List[String] =
-            if (rs.next())
-              collect(rs, acc.+:(rs.getString(1)))
-            else
-              acc
-
-          collect(stm.executeQuery())
+          stm.executeQuery()
+            .pipe(rs => BudgetItem.parse(rs))
+            .tap(_ => c.close())
         }
   }
 
-  override def addCategory(categoryLabel: String, categoryDescription: Option[String])(implicit ec: ExecutionContext): Kleisli[Future, SqLiteRepository.ConnectionBuilder, Unit] = Kleisli {
+  override def addBudget(accountId: Int, label: String, description: Option[String], amount: Option[Float])(implicit ec: ExecutionContext): Kleisli[Future, SqLiteRepository.ConnectionBuilder, Unit] = Kleisli {
     connectionBuilder =>
       Future.fromTry(connectionBuilder())
         .map { c =>
-          val stm = c.prepareStatement("INSERT INTO CATEGORIES VALUES(?, ?)")
-          stm.setString(1, categoryLabel)
-          stm.setString(2, categoryDescription.orNull)
+          val stm = c.prepareStatement("INSERT INTO BUDGETS VALUES(?, ?, ?, ?)")
+          stm.setInt(1, accountId)
+          stm.setString(2, label)
+          stm.setString(3, description.orNull)
+          stm.setFloat(4, amount.getOrElse(-1.0f))
           stm.executeUpdate()
 
           c.close()

@@ -1,5 +1,6 @@
 package org.joe.api.business
 
+import org.joe.api.entities.dto.BudgetItem
 import org.joe.api.repository.{BudgetRepository, Repositories}
 import scalaz.Kleisli
 
@@ -7,17 +8,17 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object BudgetService {
 
-  def getCategories()(implicit ec: ExecutionContext) : Kleisli[Future, Repositories[BudgetRepository], List[String]] = Kleisli { repositories =>
+  def getBudgets(acccountId: Int)(implicit ec: ExecutionContext) : Kleisli[Future, Repositories[BudgetRepository], List[BudgetItem]] = Kleisli { repositories =>
     repositories
       .repository
-      .getCategories()
+      .getBudgets(acccountId)
       .run(repositories.build)
   }
 
-  def addCategory(label: String, description: Option[String])(implicit ec: ExecutionContext): Kleisli[Future, Repositories[BudgetRepository], Unit] = Kleisli { repositories =>
+  def addBudget(accountId: Int, label: String, description: Option[String], amount: Option[Float])(implicit ec: ExecutionContext): Kleisli[Future, Repositories[BudgetRepository], Unit] = Kleisli { repositories =>
     repositories
       .repository
-      .addCategory(label, description)
+      .addBudget(accountId, label, description, amount)
       .run(repositories.build)
   }
 

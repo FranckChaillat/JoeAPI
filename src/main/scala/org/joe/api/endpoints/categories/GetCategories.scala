@@ -7,6 +7,7 @@ import io.circe.Encoder
 import io.circe.syntax._
 import org.joe.api.business.BudgetService
 import org.joe.api.endpoints.EndPoint
+import org.joe.api.entities.dto.BudgetItem.budgetItemEncoder
 import org.joe.api.repository.{BudgetRepository, Repositories}
 import scalaz.Reader
 
@@ -23,8 +24,8 @@ object GetCategories extends EndPoint[BudgetRepository] {
   override def route()(implicit ec: ExecutionContext): Reader[Repositories[BudgetRepository], Route] = Reader {
     repositories =>
       get {
-        path("budget" / "categories") {
-          val res = BudgetService.getCategories()
+        path("budgets" / IntNumber) { accountId =>
+          val res = BudgetService.getBudgets(accountId)
             .run(repositories)
           complete(res.map(x => wrapResult(x)))
         }
