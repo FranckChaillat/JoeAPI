@@ -20,17 +20,19 @@ object AddCategory extends BodyEndPoint[AddCategoryRequest, String, BudgetReposi
   private implicit val timeout: Duration = 10.seconds
 
   override def validator: Option[Validator[AddCategoryRequest]] = None
+
   override def route()(implicit ec: ExecutionContext): Reader[Repositories[BudgetRepository], Route] = Reader {
     repositories =>
-      respondWithHeaders(`Access-Control-Allow-Origin`.*) {
-        post {
-          path("budget" / "categories") {
-            handle { request =>
-              BudgetService
-                .addCategory(request.categoryLabel, request.categoryDescription)
-                .run(repositories)
-                .map(_ => "OK")
-            }
+      options {
+        complete("ok")
+      } ~
+      post {
+        path("budget" / "categories") {
+          handle { request =>
+            BudgetService
+              .addCategory(request.categoryLabel, request.categoryDescription)
+              .run(repositories)
+              .map(_ => "OK")
           }
         }
       }
