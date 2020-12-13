@@ -1,5 +1,6 @@
 package org.joe.api.endpoints.categories
 
+import akka.http.scaladsl.model.headers.`Access-Control-Allow-Origin`
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import org.joe.api.business.BudgetService
@@ -21,13 +22,15 @@ object AddCategory extends BodyEndPoint[AddCategoryRequest, String, BudgetReposi
   override def validator: Option[Validator[AddCategoryRequest]] = None
   override def route()(implicit ec: ExecutionContext): Reader[Repositories[BudgetRepository], Route] = Reader {
     repositories =>
-      post {
-        path("budget" / "categories") {
-          handle { request =>
-            BudgetService
-              .addCategory(request.categoryLabel, request.categoryDescription)
-              .run(repositories)
-              .map(_ => "OK")
+      respondWithHeaders(`Access-Control-Allow-Origin`.*) {
+        post {
+          path("budget" / "categories") {
+            handle { request =>
+              BudgetService
+                .addCategory(request.categoryLabel, request.categoryDescription)
+                .run(repositories)
+                .map(_ => "OK")
+            }
           }
         }
       }

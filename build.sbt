@@ -11,6 +11,7 @@ resolvers += "Maven Central Server" at "https://repo1.maven.org/maven2"
 
 resolvers += "Typesafe Server" at "https://repo.typesafe.com/typesafe/releases"
 
+
 libraryDependencies ++= Seq(
   "io.circe" %% "circe-core" % "0.13.0",
   "io.circe" %% "circe-generic" % "0.13.0",
