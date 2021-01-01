@@ -1,19 +1,22 @@
 package org.joe.api.repository
 
 import java.sql
-import java.sql.{Connection, ResultSet}
+import java.sql.Connection
+import java.text.SimpleDateFormat
 import java.util.Date
 
-import org.joe.api.entities.dto.{BillingRow, BudgetItem, ReportResponse}
+import org.joe.api.entities.dto.{BalanceObject, BillingRow, BudgetItem, ReportResponse}
+import org.joe.api.exceptions.UnexpectedResultSetException
 import org.joe.api.repository.utils.Operator._
-import org.joe.api.repository.utils.{Operator, Select, Update}
 import scalaz.Kleisli
+import org.joe.api.repository.utils.{Operator, Select, Update}
+import org.joe.api.repository.utils.SortedField._
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 import scala.util.chaining._
 
-object SqLiteRepository extends TransactionRepository with BudgetRepository {
+object SqLiteRepository extends TransactionRepository with BudgetRepository with ReportRepository {
 
   override type ConnectionBuilder = () => Try[Connection]
 
@@ -85,7 +88,7 @@ object SqLiteRepository extends TransactionRepository with BudgetRepository {
             //.withPredicate("category", in, c.createArrayOf("VARCHAR",
             .withPredicate("operationDate", gtEq, startDateFilterValue)
             .withPredicate("operationDate", ltEq, endDateFilterValue)
-            .sorted("operationDate")
+            .sorted(asc("operationDate"))
             .build(c)
 
           stm.executeQuery()
@@ -144,6 +147,49 @@ object SqLiteRepository extends TransactionRepository with BudgetRepository {
           stm.executeUpdate()
 
           c.close()
+        }
+  }
+
+  override def getBalanceHistory(accountId: Int, from: Date, to: Date)(implicit ec: ExecutionContext): Kleisli[Future, ConnectionBuilder, List[BalanceObject]] = Kleisli {
+    connectionBuilder =>
+      Future.fromTry(connectionBuilder())
+        .map { c =>
+            val fmt = new SimpleDateFormat("yyyy-MM-dd")
+            val stm = Select("TRANSACTIONS")
+              .withFields("date(operationDate/1000, 'unixepoch')", "SUM(amount)")
+              .withPredicate("date(operationDate/1000, 'unixepoch')", Operator.gt, fmt.format(from))
+              .withPredicate("date(operationDate/1000, 'unixepoch')", Operator.lt, fmt.format(to))// new sql.Date(to.getTime))
+              .withPredicate("accountId", Operator.eq, accountId)
+              .grouped("date(operationDate/1000, 'unixepoch')")
+              .sorted(asc("date(operationDate/1000, 'unixepoch')"))
+              .build(c)
+
+            BalanceObject.parse(stm.executeQuery())
+            .tap(_ => c.close())
+        }
+  }
+
+  override def getLastBalanceCheckPoint(accountId: Int, date: Date)(implicit ec: ExecutionContext): Kleisli[Future, ConnectionBuilder, BalanceObject] = Kleisli {
+    connectionBuilder =>
+      Future.fromTry(connectionBuilder())
+        .flatMap { c =>
+          val fmt = new SimpleDateFormat("yyyy-MM-dd")
+          val stm = Select("BALANCE_CHECKPOINT")
+            .withFields("checkPointDate", "amount")
+            .withPredicate("accountId", Operator.eq, accountId)
+            .withPredicate("checkPointDate", Operator.ltEq, fmt.format(date))
+            .sorted(desc("checkPointDate"))
+            .limit(1)
+            .build(c)
+
+
+          val rs = stm.executeQuery()
+          if(rs.next()) {
+            val balanceObject = BalanceObject(rs.getString(1), rs.getFloat(2))
+            Future.successful(balanceObject)
+          }
+          else
+            Future.failed(UnexpectedResultSetException("No row found in Balance check point resultset"))
         }
   }
 }

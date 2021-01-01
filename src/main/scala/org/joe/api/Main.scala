@@ -8,7 +8,7 @@ import akka.stream.ActorMaterializer
 import com.typesafe.config.{Config, ConfigFactory}
 import org.joe.api.configuration.Configuration
 import org.joe.api.exceptions.SqlLiteConnectionError
-import org.joe.api.repository.{BudgetRepository, Repositories, SqLiteRepository, TransactionRepository}
+import org.joe.api.repository.{BudgetRepository, ReportRepository, Repositories, SqLiteRepository, TransactionRepository}
 import org.json4s.{DefaultFormats, Formats}
 
 import scala.concurrent.duration.Duration
@@ -40,6 +40,11 @@ object Main  {
     def build: () => Try[Connection] = sqliteConnectionBuilder
   }
 
+  private def getReportRepository = new Repositories[ReportRepository] {
+    def repository: ReportRepository = SqLiteRepository
+    def build: () => Try[Connection] = sqliteConnectionBuilder
+  }
+
   implicit val system: ActorSystem = ActorSystem("joeapi")
   implicit val materializer: ActorMaterializer = ActorMaterializer()
   implicit val executionContext: ExecutionContextExecutor = system.dispatcher
@@ -47,12 +52,10 @@ object Main  {
 
 
   def main(args: Array[String]): Unit = {
-    lazy val router = new HistoryRouter(getTransactionRepository, getBudgetRepository)
+    lazy val router = new HistoryRouter(getTransactionRepository, getBudgetRepository, getReportRepository)
     val bindingFuture = Http().bindAndHandle(router.routes, host, port)
     println(s"Server online at http://${host}:${port}\nPress RETURN to stop...")
     system.registerOnTermination(() => bindingFuture.flatMap(_.unbind()))
     Await.result(system.whenTerminated, Duration.Inf)
   }
-
-
 }

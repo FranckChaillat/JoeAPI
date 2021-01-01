@@ -2,7 +2,13 @@ package org.joe.api.repository.utils
 
 import java.sql.{Connection, PreparedStatement}
 
-final case class Select private (table: String, fields: List[String] = List.empty, predicates: List[Predicate] = List.empty, groupedFields: List[String] = List.empty, sortedFields: List[String] = List.empty) extends Query {
+
+final case class Select private (table: String,
+                                 fields: List[String] = List.empty,
+                                 predicates: List[Predicate] = List.empty,
+                                 groupedFields: List[String] = List.empty,
+                                 sortedFields: List[SortedField] = List.empty,
+                                 limit: Option[Int] = None) extends Query {
 
   def this(from: String) = {
     this(from, List.empty, List.empty)
@@ -25,9 +31,12 @@ final case class Select private (table: String, fields: List[String] = List.empt
     copy(groupedFields = fields.toList)
   }
 
-  def sorted(fields: String*): Select = {
+  def sorted(fields: SortedField*): Select = {
     copy(sortedFields = fields.toList)
   }
+
+  def limit(count: Int): Select =
+    copy(limit = Some(count))
 
   override def build(connection: Connection): PreparedStatement = {
     Select.buildQuery(this, connection)
@@ -58,10 +67,12 @@ object Select {
 
     val orderedQuery = if(q.sortedFields.nonEmpty) {
       s"""$groupedQuery
-         | ORDER BY ${q.sortedFields.mkString(",")}""".stripMargin
+         | ORDER BY ${q.sortedFields.map(f => s"${f.field} ${if(f.reversed) "DESC" else ""}").mkString(",")}""".stripMargin
     } else groupedQuery
 
-    val stm = conn.prepareStatement(orderedQuery)
+    val limited = q.limit.map(c => s"""$orderedQuery LIMIT $c""").getOrElse(orderedQuery)
+
+    val stm = conn.prepareStatement(limited)
 
     q.predicates.zipWithIndex.foreach {
       case (p, i) => stm.setObject(i + 1, p.value)

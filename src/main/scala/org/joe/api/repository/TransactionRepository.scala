@@ -15,5 +15,4 @@ trait TransactionRepository {
   def bulkInsertTransaction(rows : Seq[BillingRow], limitDate: Option[Date])(implicit ec: ExecutionContext) : Kleisli[Future, ConnectionBuilder, Unit]
   def insertTransaction(row: BillingRow)(implicit ec: ExecutionContext): Kleisli[Future, ConnectionBuilder, Unit]
   def getTransactionRows(accountid: Int, categories: Seq[String], startDate: Option[Date], endDate: Option[Date])(implicit ec: ExecutionContext) : Kleisli[Future, ConnectionBuilder, Seq[BillingRow]]
-  def getReport(accountid: Int, categories: Seq[String], startDate: Option[Date], endDate: Option[Date])(implicit ec: ExecutionContext): Kleisli[Future, ConnectionBuilder, ReportResponse]
 }

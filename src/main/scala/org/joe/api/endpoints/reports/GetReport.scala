@@ -6,14 +6,14 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.unmarshalling.Unmarshaller._
 import org.joe.api.business.ReportService
 import org.joe.api.endpoints.EndPoint
-import org.joe.api.repository.{Repositories, TransactionRepository}
+import org.joe.api.repository.{ReportRepository, Repositories, TransactionRepository}
 import org.json4s.jackson.Serialization.write
 import org.json4s.{DefaultFormats, Formats}
 import scalaz.Reader
 
 import scala.concurrent.ExecutionContext
 
-object GetReport extends EndPoint[TransactionRepository] {
+object GetReport extends EndPoint[ReportRepository] {
 
   private implicit val format: Formats = DefaultFormats
 
@@ -21,7 +21,7 @@ object GetReport extends EndPoint[TransactionRepository] {
     HttpResponse(StatusCodes.OK, entity = HttpEntity(ContentTypes.`application/json`, write[T](res)))
   }
 
-  override def route()(implicit ec: ExecutionContext): Reader[Repositories[TransactionRepository], Route] = Reader {
+  override def route()(implicit ec: ExecutionContext): Reader[Repositories[ReportRepository], Route] = Reader {
     repositories =>
       get {
         path("reports") {

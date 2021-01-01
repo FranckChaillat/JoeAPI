@@ -4,19 +4,20 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import org.joe.api.endpoints.categories.{AddCategory, GetCategories}
-import org.joe.api.endpoints.reports.GetReport
+import org.joe.api.endpoints.reports.{GetBalanceHistory, GetReport}
 import org.joe.api.endpoints.transactions.{AddBulkTransactionEndPoint, AddTransactionEndPoint, GetHistoryEndPoint, UpdateTransactionEndPoint}
 import org.joe.api.entities.ErrorResponse
 import org.joe.api.exceptions.UpdateException
 import org.joe.api.exceptions.rejections.{EmptyListRejection, InvalidValueRangeRejection}
-import org.joe.api.repository.{BudgetRepository, Repositories, TransactionRepository}
+import org.joe.api.repository.{BudgetRepository, ReportRepository, Repositories, TransactionRepository}
 import org.json4s.jackson.Serialization.write
 import org.json4s.{DefaultFormats, Formats}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class HistoryRouter(transactionRepository: Repositories[TransactionRepository],
-                    budgetRepository: Repositories[BudgetRepository]) {
+                    budgetRepository: Repositories[BudgetRepository],
+                    reportRepository: Repositories[ReportRepository]) {
 
   private implicit def format: Formats = DefaultFormats
 
@@ -53,13 +54,19 @@ class HistoryRouter(transactionRepository: Repositories[TransactionRepository],
 
 
   def routes: Route = pathPrefix("joe") {
-    val routes = (Seq(
+    val reportRoutes = Seq(GetBalanceHistory, GetReport)
+    val transactionRoutes = Seq(
       GetHistoryEndPoint,
       AddTransactionEndPoint,
       UpdateTransactionEndPoint,
-      AddBulkTransactionEndPoint,
-      GetReport
-    ).map(_.route.run(transactionRepository)) ++ Seq(AddCategory, GetCategories).map(_.route.run(budgetRepository))).reduce((a, b) => a ~ b)
+      AddBulkTransactionEndPoint
+    )
+    val budgetRoutes = Seq(AddCategory, GetCategories)
+    val routes =
+      (transactionRoutes.map(_.route.run(transactionRepository))
+          ++ budgetRoutes.map(_.route.run(budgetRepository))
+          ++ reportRoutes.map(_.route.run(reportRepository)))
+        .reduce((a, b) => a ~ b)
 
     Route.seal {
       routes
