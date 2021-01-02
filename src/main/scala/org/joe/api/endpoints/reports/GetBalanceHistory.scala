@@ -6,7 +6,6 @@ import java.util.Date
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import akka.http.scaladsl.unmarshalling.Unmarshaller._
 import org.joe.api.business.ReportService
 import org.joe.api.endpoints.EndPoint
 import org.joe.api.repository.{ReportRepository, Repositories}
@@ -28,8 +27,8 @@ object GetBalanceHistory extends EndPoint[ReportRepository] {
     repositories =>
       get {
         path("reports" / "balance") {
-          parameters("categories".as(CsvSeq[String]) ? List.empty, Symbol("accountId").as[Int], Symbol("startDate"), Symbol("endDate")? defaultEndDate) {
-            (categories, accountId, startDate, endDate) =>
+          parameters(Symbol("accountId").as[Int], Symbol("startDate"), Symbol("endDate")? defaultEndDate) {
+            (accountId, startDate, endDate) =>
               val res = ReportService.getBalanceHistory(accountId, startDate, endDate)
                 .run(repositories)
 

@@ -26,10 +26,10 @@ object AddBudget extends BodyEndPoint[AddBudgetRequest, String, BudgetRepository
         complete("ok")
       } ~
       post {
-        path("budgets" / IntNumber) { accountId =>
+        path("budgets") {
           handle { request =>
             BudgetService
-              .addBudget(accountId, request.label, request.description, request.amount)
+              .addBudget(request.accountId, request.label, request.description, request.amount)
               .run(repositories)
               .map(_ => "OK")
           }

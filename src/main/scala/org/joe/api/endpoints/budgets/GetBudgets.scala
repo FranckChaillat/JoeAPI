@@ -3,6 +3,7 @@ package org.joe.api.endpoints.budgets
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.unmarshalling.Unmarshaller.CsvSeq
 import io.circe.Encoder
 import io.circe.syntax._
 import org.joe.api.business.BudgetService
@@ -24,10 +25,12 @@ object GetBudgets extends EndPoint[BudgetRepository] {
   override def route()(implicit ec: ExecutionContext): Reader[Repositories[BudgetRepository], Route] = Reader {
     repositories =>
       get {
-        path("budgets" / IntNumber) { accountId =>
-          val res = BudgetService.getBudgets(accountId)
-            .run(repositories)
-          complete(res.map(x => wrapResult(x)))
+        path("budgets") {
+          parameters(Symbol("accountId").as[Int]) { accountId =>
+            val res = BudgetService.getBudgets(accountId)
+              .run(repositories)
+            complete(res.map(x => wrapResult(x)))
+          }
         }
       }
   }
