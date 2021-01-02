@@ -12,7 +12,7 @@ import scala.concurrent.{ExecutionContext, Future}
 object ReportService {
 
   def getBalanceHistory(accountId: Int, startDate: String, endDate: String)(implicit ec: ExecutionContext) : Kleisli[Future, Repositories[ReportRepository], List[BalanceObject]] = Kleisli {
-    repositories =>
+    repositories =>9
       val formatter: SimpleDateFormat = new SimpleDateFormat("yyyy-MM-dd")
        repositories.repository.getLastBalanceCheckPoint(accountId, formatter.parse(startDate))
         .flatMap { checkPoint =>

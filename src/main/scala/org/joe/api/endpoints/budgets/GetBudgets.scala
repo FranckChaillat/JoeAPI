@@ -1,4 +1,4 @@
-package org.joe.api.endpoints.categories
+package org.joe.api.endpoints.budgets
 
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.Directives._
@@ -13,7 +13,7 @@ import scalaz.Reader
 
 import scala.concurrent.ExecutionContext
 
-object GetCategories extends EndPoint[BudgetRepository] {
+object GetBudgets extends EndPoint[BudgetRepository] {
 
 
   private def wrapResult[T <: AnyRef](res: T)(implicit encoder: Encoder[T]) : HttpResponse = {

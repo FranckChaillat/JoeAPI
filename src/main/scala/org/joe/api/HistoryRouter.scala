@@ -3,7 +3,7 @@ package org.joe.api
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
-import org.joe.api.endpoints.categories.{AddCategory, GetCategories}
+import org.joe.api.endpoints.budgets.{AddBudget, GetBudgets}
 import org.joe.api.endpoints.reports.{GetBalanceHistory, GetReport}
 import org.joe.api.endpoints.transactions.{AddBulkTransactionEndPoint, AddTransactionEndPoint, GetHistoryEndPoint, UpdateTransactionEndPoint}
 import org.joe.api.entities.ErrorResponse
@@ -61,7 +61,7 @@ class HistoryRouter(transactionRepository: Repositories[TransactionRepository],
       UpdateTransactionEndPoint,
       AddBulkTransactionEndPoint
     )
-    val budgetRoutes = Seq(AddCategory, GetCategories)
+    val budgetRoutes = Seq(AddBudget, GetBudgets)
     val routes =
       (transactionRoutes.map(_.route.run(transactionRepository))
           ++ budgetRoutes.map(_.route.run(budgetRepository))
