@@ -35,6 +35,6 @@ object ReportService {
         val updated = acc.headOption.map(lastBalance => e.copy(balance = lastBalance.balance + e.balance))
             .getOrElse(e)
         updated :: acc
-    }
+    }.reverse
   }
 }
