@@ -7,13 +7,12 @@ import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
 import com.typesafe.config.{Config, ConfigFactory}
 import org.joe.api.configuration.Configuration
-import org.joe.api.exceptions.SqlLiteConnectionError
-import org.joe.api.repository.{BudgetRepository, ReportRepository, Repositories, SqLiteRepository, TransactionRepository}
+import org.joe.api.repository._
 import org.json4s.{DefaultFormats, Formats}
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContextExecutor}
-import scala.util.{Failure, Try}
+import scala.util.Try
 
 object Main  {
 
@@ -21,28 +20,23 @@ object Main  {
   val Configuration(connectionString, host, port) = Configuration.getConfiguration()
 
 
-  private def sqliteConnectionBuilder: () => Try[Connection] = () => {
-    Try {
+  private def sqliteConnectionBuilder: Connection =
       DriverManager.getConnection(connectionString)
-    }.recoverWith {
-      case _: Throwable =>
-        Failure(SqlLiteConnectionError(connectionString))
-    }
-  }
+
 
   private def getTransactionRepository: Repositories[TransactionRepository] = new Repositories[TransactionRepository] {
     def repository: TransactionRepository = SqLiteRepository
-    def build: () => Try[Connection] = sqliteConnectionBuilder
+    def connection: Connection = sqliteConnectionBuilder
   }
 
   private def getBudgetRepository = new Repositories[BudgetRepository] {
     def repository: BudgetRepository = SqLiteRepository
-    def build: () => Try[Connection] = sqliteConnectionBuilder
+    def connection: Connection = sqliteConnectionBuilder
   }
 
   private def getReportRepository = new Repositories[ReportRepository] {
     def repository: ReportRepository = SqLiteRepository
-    def build: () => Try[Connection] = sqliteConnectionBuilder
+    def connection: Connection = sqliteConnectionBuilder
   }
 
   implicit val system: ActorSystem = ActorSystem("joeapi")

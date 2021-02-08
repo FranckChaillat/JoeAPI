@@ -18,7 +18,7 @@ object ReportService {
         .flatMap { checkPoint =>
           val balanceHistory = repositories.repository.getBalanceHistory(accountId, formatter.parse(checkPoint.date), formatter.parse(endDate))
           balanceHistory.map(a => computeBalance(checkPoint, a))
-        }.run(repositories.build)
+        }.run(repositories.connection)
   }
 
   def getReport(accountId: Int, categories: Seq[String], startDate: Option[String], endDate: Option[String])(implicit ec: ExecutionContext) : Kleisli[Future, Repositories[ReportRepository], ReportResponse] = Kleisli { repositories =>
@@ -26,7 +26,7 @@ object ReportService {
     repositories
         .repository
         .getReport(accountId, categories, startDate.map(formatter.parse), endDate.map(formatter.parse))
-        .run(repositories.build)
+        .run(repositories.connection)
   }
 
   private def computeBalance(checkPoint: BalanceObject, balanceHistory: List[BalanceObject]) = {

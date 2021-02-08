@@ -12,14 +12,14 @@ object BudgetService {
     repositories
       .repository
       .getBudgets(acccountId)
-      .run(repositories.build)
+      .run(repositories.connection)
   }
 
   def addBudget(accountId: Int, label: String, description: Option[String], amount: Option[Float])(implicit ec: ExecutionContext): Kleisli[Future, Repositories[BudgetRepository], Unit] = Kleisli { repositories =>
     repositories
       .repository
       .addBudget(accountId, label, description, amount)
-      .run(repositories.build)
+      .run(repositories.connection)
   }
 
 }

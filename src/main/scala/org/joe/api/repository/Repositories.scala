@@ -6,5 +6,5 @@ import scala.util.Try
 
 trait Repositories[T] {
   def repository: T
-  def build: () => Try[Connection]
+  def connection: Connection
 }

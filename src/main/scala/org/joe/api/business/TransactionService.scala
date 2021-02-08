@@ -20,7 +20,7 @@ object TransactionService {
       repository
         .repository
         .bulkInsertTransaction(billingRows, limitDate.map(formatter.parse))
-        .run(repository.build)
+        .run(repository.connection)
   }
 
   def updateTransaction(accountId: Int, identifier: String, category: Option[String])(implicit ec: ExecutionContext)
@@ -29,7 +29,7 @@ object TransactionService {
       category.map(c =>
         repository.repository
         .updateTransaction(accountId, identifier, c)
-        .run(repository.build))
+        .run(repository.connection))
         .getOrElse(Future.unit)
   }
 
@@ -46,7 +46,7 @@ object TransactionService {
         val row = BillingRow(id, accountId, od, vd, label, amount, Some(1), category)
         repository.repository
           .insertTransaction(row)
-          .run(repository.build)
+          .run(repository.connection)
       }
       Future.fromTry(result).flatten
     }
@@ -60,7 +60,7 @@ object TransactionService {
         ed <- Try(endDate.map(formatter.parse))
       } yield {
         repository.repository
-          .getTransactionRows(accountId, categories, sd, ed).run(repository.build)
+          .getTransactionRows(accountId, categories, sd, ed).run(repository.connection)
       }
       Future.fromTry(result).flatten
     }
