@@ -38,6 +38,4 @@ object BudgetService {
         .run(repositories.connection)
     } else Future.unit
   }
-
-
 }
