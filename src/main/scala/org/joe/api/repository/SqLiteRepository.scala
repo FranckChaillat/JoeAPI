@@ -140,6 +140,23 @@ object SqLiteRepository extends TransactionRepository with BudgetRepository with
       }
   }
 
+  override def updateBudget(budgetLabel: String, description: Option[String], amount: Option[Float])(implicit ec: ExecutionContext): Kleisli[Future, Connection, Unit]  = Kleisli {
+    connection =>
+      val updatePart = Seq(description.map(d => ("description", d)), amount.map(a => ("amount", a.toString))).flatten
+
+      Future {
+        val stm = Update("BUDGETS")
+          .set(updatePart: _*)
+          .withPredicate("label",  Operator.eq, budgetLabel)
+          .build(connection)
+
+        stm.executeUpdate()
+        connection.close()
+      }
+
+  }
+
+
   override def getBalanceHistory(accountId: Int, from: Date, to: Date)(implicit ec: ExecutionContext): Kleisli[Future, Connection, List[BalanceObject]] = Kleisli {
     connection =>
       Future {
@@ -180,4 +197,5 @@ object SqLiteRepository extends TransactionRepository with BudgetRepository with
               Future.failed(UnexpectedResultSetException("No row found in Balance check point resultset"))
           }.flatten
   }
+
 }

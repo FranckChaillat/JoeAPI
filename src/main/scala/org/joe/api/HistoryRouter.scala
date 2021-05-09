@@ -3,12 +3,12 @@ package org.joe.api
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
-import org.joe.api.endpoints.budgets.{AddBudget, GetBudgets}
+import org.joe.api.endpoints.budgets.{AddBudget, GetBudgets, UpdateBudget}
 import org.joe.api.endpoints.reports.{GetBalanceHistory, GetReport}
 import org.joe.api.endpoints.transactions.{AddBulkTransactionEndPoint, AddTransactionEndPoint, GetHistoryEndPoint, UpdateTransactionEndPoint}
 import org.joe.api.entities.ErrorResponse
-import org.joe.api.exceptions.UpdateException
-import org.joe.api.exceptions.rejections.{EmptyListRejection, InvalidValueRangeRejection}
+import org.joe.api.exceptions.{ItemDuplicateError, UpdateException}
+import org.joe.api.exceptions.rejections.{EmptyListRejection, InvalidValueRangeRejection, RequiredFieldRejection}
 import org.joe.api.repository.{BudgetRepository, ReportRepository, Repositories, TransactionRepository}
 import org.json4s.jackson.Serialization.write
 import org.json4s.{DefaultFormats, Formats}
@@ -23,6 +23,8 @@ class HistoryRouter(transactionRepository: Repositories[TransactionRepository],
 
   private implicit def serviceExceptionHandler: ExceptionHandler =
     ExceptionHandler {
+      case ItemDuplicateError(msg) =>
+        complete(createErrorResponse(StatusCodes.Conflict, Some(msg)))
       case e : UpdateException =>
         complete(createErrorResponse(StatusCodes.BadRequest, Some(e.msg)))
       case t: Throwable =>
@@ -36,6 +38,11 @@ class HistoryRouter(transactionRepository: Repositories[TransactionRepository],
   private implicit def rejectionHandler : RejectionHandler =
     RejectionHandler.newBuilder()
       .handle {
+        case RequiredFieldRejection(paramName, msg) =>
+          complete(createErrorResponse(
+            StatusCodes.BadRequest,
+            Some(s"Expected value for parameter $paramName; $msg")
+          ))
         case InvalidValueRangeRejection(paramName, min, max, actual) =>
           complete(createErrorResponse(
             StatusCodes.BadRequest,
@@ -61,7 +68,7 @@ class HistoryRouter(transactionRepository: Repositories[TransactionRepository],
       UpdateTransactionEndPoint,
       AddBulkTransactionEndPoint
     )
-    val budgetRoutes = Seq(AddBudget, GetBudgets)
+    val budgetRoutes = Seq(AddBudget, GetBudgets, UpdateBudget)
     val routes =
       (transactionRoutes.map(_.route.run(transactionRepository))
           ++ budgetRoutes.map(_.route.run(budgetRepository))

@@ -8,6 +8,9 @@ import scalaz.Kleisli
 import scala.concurrent.{ExecutionContext, Future}
 
 trait BudgetRepository {
+  def updateBudget(budgetLabel: String, description: Option[String], amount: Option[Float])(implicit ec: ExecutionContext): Kleisli[Future, Connection, Unit]
+
   def getBudgets(acccountId: Int)(implicit ec: ExecutionContext): Kleisli[Future, Connection, List[BudgetItem]]
+
   def addBudget(accountId: Int, label: String, description: Option[String], amount: Option[Float])(implicit ec: ExecutionContext): Kleisli[Future, Connection, Unit]
 }
